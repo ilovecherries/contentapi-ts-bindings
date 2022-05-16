@@ -69,7 +69,7 @@ export class ContentAPI {
 			messagePagination = 25,
 			subpagePage,
 			subpagesPagination = 25,
-		}: GetPageOptions,
+		}: GetPageOptions = {},
 		headers = defaultHeaders
 	): Promise<TypedSearchResult<GetPageResult>> {
 		const searches = [
@@ -100,7 +100,7 @@ export class ContentAPI {
 			)
 		return await this.request(new SearchRequests(
 			{
-				id,
+				pageId: id,
 				filetype: InternalContentType.file,
 			},
 			searches
