@@ -100,7 +100,7 @@ export class ContentAPI {
 			)
 		return await this.request(new SearchRequests(
 			{
-				pageId: id,
+				pageid: id,
 				filetype: InternalContentType.file,
 			},
 			searches
