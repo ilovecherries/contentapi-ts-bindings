@@ -9,7 +9,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "opitionalDependencies": {
+  "optionalDependencies": {
     "axios": "^0.27.2",
     "ws": "^8.6.0"
   }
