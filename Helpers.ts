@@ -91,7 +91,7 @@ export class ContentAPI {
 				new SearchRequest(
 					RequestType.content,
 					"*",
-					"parentId = @pageid and !notdeleted() and contenttype <> @filetype",
+					"parentId = @pageid and !notdeleted() and contentType <> @filetype",
 					"id_desc",
 					subpagesPagination,
 					subpagePage * subpagesPagination,
