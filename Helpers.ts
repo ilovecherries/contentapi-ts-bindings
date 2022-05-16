@@ -72,7 +72,7 @@ export class ContentAPI_Session {
 		type: ItemType,
 		id: number,
 	) {
-		const res = await axios.delete(
+		await axios.delete(
 			`${this.api.path}/Delete/${type}/${id}`,
 			{ headers: this.headers },
 		);
