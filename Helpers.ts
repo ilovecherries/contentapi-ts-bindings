@@ -67,6 +67,12 @@ export class ContentAPI {
 		return res.data as SearchResult<T>;
 	}
 
+	getFileURL(hash: string, size: number): string {
+		return `https://${this.API_URL}/api/File/raw/${hash}${
+			size ? `?size=${size}&crop=true` : ""
+		}`;
+	}
+
 	async getPage(
 		id: number,
 		{
@@ -125,9 +131,25 @@ export type ItemType = "message" | "content" | "user" | "watch" | "vote" | "user
 
 export class ContentAPI_Socket {
 	private isReady = false;
+	public socket: WebSocket;
+
+	constructor(
+		private readonly api: ContentAPI,
+		private readonly token: string,
+		private readonly retryOnClose = false,
+	) {
+		this.socket = new WebSocket(api.wsPath);
+	}
+}
+
+export interface ContentAPI_SessionState {
+	token: string;
+	user: User;
 }
 
 export class ContentAPI_Session {
+	private socket: ContentAPI_Socket;
+
 	constructor(
 		private readonly api: ContentAPI,
 		private token: string,
@@ -147,6 +169,18 @@ export class ContentAPI_Session {
 			api,
 			await api.login(username, password)
 		);
+	}
+
+	async getUserInfo(): Promise<User> {
+		const res = await axios.get(`${this.api.path}/User/me`);
+		return res.data;
+	}
+
+	async getState(): Promise<ContentAPI_SessionState> {
+		return {
+			token: this.token,
+			user: await this.getUserInfo()
+		};
 	}
 
 	async write<T extends IIdType>(
