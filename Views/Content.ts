@@ -1,5 +1,12 @@
 import { VoteType } from "../Enums";
+import { MarkupLanguage } from "./Extras/MarkupLanguage";
 import { IIdType } from "./Extras/ViewInterfaces";
+
+export interface ContentValues {
+	markupLang?: MarkupLanguage;
+	photos?: Array<string>;
+	thumbnail?: string;
+}
 
 export interface Content extends IIdType {
 	id: number;
@@ -20,4 +27,5 @@ export interface Content extends IIdType {
 	commentCount: number;
 	watchCount: number;
 	lastRevisionId: number;
+	values: ContentValues;
 }

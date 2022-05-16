@@ -1,3 +1,4 @@
+import { Content } from "./Content";
 import { IContentUserRelatedType } from "./Extras/ViewInterfaces";
 
 export interface Watch extends IContentUserRelatedType {
@@ -10,4 +11,5 @@ export interface Watch extends IContentUserRelatedType {
 	editDate: string;
 	commentNotifications: number;
 	activityNotifications: number;
+	content: Content;
 }
