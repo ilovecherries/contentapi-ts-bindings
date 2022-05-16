@@ -172,7 +172,10 @@ export class ContentAPI_Session {
 	}
 
 	async getUserInfo(): Promise<User> {
-		const res = await axios.get(`${this.api.path}/User/me`);
+		const res = await axios.get(
+			`${this.api.path}/User/me`,
+			{ headers: this.headers },
+		);
 		return res.data;
 	}
 
