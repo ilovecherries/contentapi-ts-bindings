@@ -5,6 +5,7 @@ import { SearchResult, TypedSearchResult } from "./Search/SearchResult";
 import { RequestType } from "./Search/RequestType";
 import { Content } from "./Views/Content";
 import { Message } from "./Views/Message";
+import { User } from "./Views/User";
 import { InternalContentType } from "./Enums";
 
 export enum Status {
@@ -25,10 +26,14 @@ export interface GetPageOptions {
 	subpagesPagination?: number;
 }
 
+const CONTENT_QUICK_QUERY = "~values,keywords,votes,text,commentCount";
+type ContentQuick = Omit<Content, "values" | "keywords" | "votes" | "text" | "commentCount">;
+
 export interface GetPageResult {
 	content: Content[];
-	messaage?: Message[];
-	subpages?: Content[];
+	message?: Message[];
+	subpages?: ContentQuick[];
+	user: User[]
 }
 
 export class ContentAPI {
@@ -75,18 +80,21 @@ export class ContentAPI {
 		const searches = [
 			new SearchRequest(RequestType.content, "*", "id = @pageid"),
 		];
-		if (messagePage !== undefined)
+		let userQuery = "id in @content.createUserId";
+		if (messagePage !== undefined) {
 			searches.push(
 				new SearchRequest(
 					RequestType.message,
-					"*",
+					CONTENT_QUICK_QUERY,
 					"contentId = @pageid and !notdeleted() and !null(module)",
 					"id_desc",
 					messagePagination,
 					messagePage * messagePagination,
 				),
-			)
-		if (subpagePage !== undefined)
+			);
+			userQuery += " or id in @message.createUserId";
+		}
+		if (subpagePage !== undefined) {
 			searches.push(
 				new SearchRequest(
 					RequestType.content,
@@ -97,7 +105,12 @@ export class ContentAPI {
 					subpagePage * subpagesPagination,
 					"subpages",
 				),
-			)
+			);
+			userQuery += " or id in @subpages.createUserId";
+		}
+		searches.push(new SearchRequest(
+			RequestType.user, "*", userQuery,
+		));
 		return await this.request(new SearchRequests(
 			{
 				pageid: id,
