@@ -4,6 +4,13 @@ export enum BanType {
 	private = 2,
 }
 
+export enum InternalContentType {
+	none = 0,
+	page = 1,
+	module = 2,
+	file = 3
+}
+
 export enum UserAction {
 	create = 1,
 	read = 2,

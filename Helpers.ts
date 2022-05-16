@@ -1,9 +1,34 @@
 import axios from "axios";
 import { IIdType } from "./Views/Extras/ViewInterfaces";
+import { SearchRequest, SearchRequests } from "./Search/SearchRequests";
+import { SearchResult, TypedSearchResult } from "./Search/SearchResult";
+import { RequestType } from "./Search/RequestType";
+import { Content } from "./Views/Content";
+import { Message } from "./Views/Message";
+import { InternalContentType } from "./Enums";
 
 export enum Status {
 	active = "active",
 	not_present = "",
+}
+
+const defaultHeaders: Record<string, string> = {
+	"Content-Type": "application/json",
+};
+
+const defaultPagination = 25;
+
+export interface GetPageOptions {
+	messagePage?: number;
+	messagePagination?: number;
+	subpagePage?: number;
+	subpagesPagination?: number;
+}
+
+export interface GetPageResult {
+	content: Content[];
+	messaage?: Message[];
+	subpages?: Content[];
 }
 
 export class ContentAPI {
@@ -17,12 +42,69 @@ export class ContentAPI {
 	async login(username: string, password: string): Promise<string> {
 		const body = JSON.stringify({ username, password })
 		const res = await axios.post(
-			`https://${API_DOMAIN}/api/User/login`, 
+			`https://${this.API_URL}/api/User/login`, 
 			body, 
 			{ headers: { "Content-Type": "application/json" }}
 		);
 		const token = res.data as string;
 		return token;
+	}
+
+	async request<T = Record<string, Record<string, object>>>(
+		search: SearchRequests,
+		headers = defaultHeaders,
+	): Promise<SearchResult<T>> {
+		const res = await axios.post(
+			`https://${this.API_URL}/api/Request`, 
+			JSON.stringify(search), 
+			{ headers }
+		);
+		return res.data as SearchResult<T>;
+	}
+
+	async getPage(
+		id: number,
+		{
+			messagePage,
+			messagePagination = 25,
+			subpagePage,
+			subpagesPagination = 25,
+		}: GetPageOptions,
+		headers = defaultHeaders
+	): Promise<TypedSearchResult<GetPageResult>> {
+		const searches = [
+			new SearchRequest(RequestType.content, "*", "id = @pageid"),
+		];
+		if (messagePage)
+			searches.push(
+				new SearchRequest(
+					RequestType.message,
+					"*",
+					"contentId = @pageid and !notdeleted() and !null(module)",
+					"id_desc",
+					messagePagination,
+					messagePage * messagePagination,
+				),
+			)
+		if (subpagePage)
+			searches.push(
+				new SearchRequest(
+					RequestType.content,
+					"*",
+					"parentId = @pageid and !notdeleted() and contenttype <> @filetype",
+					"id_desc",
+					subpagesPagination,
+					subpagePage * subpagesPagination,
+					"subpages",
+				),
+			)
+		return await this.request(new SearchRequests(
+			{
+				id,
+				filetype: InternalContentType.file,
+			},
+			searches
+		), headers) as SearchResult<GetPageResult>;
 	}
 }
 
