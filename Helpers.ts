@@ -85,7 +85,7 @@ export class ContentAPI {
 			searches.push(
 				new SearchRequest(
 					RequestType.message,
-					CONTENT_QUICK_QUERY,
+					"*",
 					"contentId = @pageid and !notdeleted() and !null(module)",
 					"id_desc",
 					messagePagination,
@@ -98,7 +98,7 @@ export class ContentAPI {
 			searches.push(
 				new SearchRequest(
 					RequestType.content,
-					"*",
+					CONTENT_QUICK_QUERY,
 					"parentId = @pageid and !notdeleted() and contentType <> @filetype",
 					"id_desc",
 					subpagesPagination,
