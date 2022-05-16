@@ -75,7 +75,7 @@ export class ContentAPI {
 		const searches = [
 			new SearchRequest(RequestType.content, "*", "id = @pageid"),
 		];
-		if (messagePage)
+		if (messagePage !== undefined)
 			searches.push(
 				new SearchRequest(
 					RequestType.message,
@@ -86,7 +86,7 @@ export class ContentAPI {
 					messagePage * messagePagination,
 				),
 			)
-		if (subpagePage)
+		if (subpagePage !== undefined)
 			searches.push(
 				new SearchRequest(
 					RequestType.content,
@@ -108,8 +108,6 @@ export class ContentAPI {
 	}
 }
 
-// TODO: if there's some way to do this with typenames in the future, that
-// would be nice to know but it seems like there isn't
 export type ItemType = "message" | "content" | "user" | "watch" | "vote" | "uservariable" | "ban";
 
 export class ContentAPI_Socket {
