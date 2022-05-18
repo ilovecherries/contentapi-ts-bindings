@@ -26,7 +26,7 @@ export interface GetPageOptions {
 }
 
 const CONTENT_QUICK_QUERY = "~values,keywords,votes,text,commentCount";
-type ContentQuick = Omit<
+export type ContentQuick = Omit<
 	Content,
 	"values" | "keywords" | "votes" | "text" | "commentCount"
 >;
@@ -39,7 +39,7 @@ export interface GetPageResult {
 }
 
 export class ContentAPI {
-	constructor(private readonly API_URL: string) {}
+	constructor(private readonly API_URL: string) { }
 
 	get path() {
 		return `https://${this.API_URL}/api`;
@@ -72,9 +72,8 @@ export class ContentAPI {
 	}
 
 	getFileURL(hash: string, size: number): string {
-		return `https://${this.API_URL}/api/File/raw/${hash}${
-			size ? `?size=${size}&crop=true` : ""
-		}`;
+		return `https://${this.API_URL}/api/File/raw/${hash}${size ? `?size=${size}&crop=true` : ""
+			}`;
 	}
 
 	async getPage(
@@ -138,21 +137,21 @@ export type ItemType =
 	| "uservariable"
 	| "ban";
 
-type ContentAPI_Socket_Function = (data: LiveEvent) => void;
+export type ContentAPI_Socket_Function = (data: LiveEvent) => void;
 
 export class ContentAPI_Socket {
 	private isReady = false;
 	private requestCounter = 1;
 	private requests: Map<string, ContentAPI_Socket_Function> = new Map();
 	public socket = this.newSocket();
-	public callback: ContentAPI_Socket_Function = (_) => {};
+	public callback: ContentAPI_Socket_Function = (_) => { };
 
 	constructor(
 		private readonly api: ContentAPI,
 		private readonly token: string,
 		private readonly retryOnClose = true,
 		private lastId?: number,
-	) {}
+	) { }
 
 	private newSocket(): WebSocket {
 		let params = new URLSearchParams();
@@ -247,7 +246,7 @@ export interface ContentAPI_SessionState {
 export class ContentAPI_Session {
 	public socket: ContentAPI_Socket;
 
-	constructor(private readonly api: ContentAPI, private token: string) {}
+	constructor(private readonly api: ContentAPI, private token: string) { }
 
 	get headers() {
 		return {
