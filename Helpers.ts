@@ -202,7 +202,7 @@ export class ContentAPI_Session {
 		type: ItemType,
 		id: number,
 	) {
-		await axios.delete(
+		await axios.post(
 			`${this.api.path}/Delete/${type}/${id}`,
 			{ headers: this.headers },
 		);
