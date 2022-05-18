@@ -309,4 +309,8 @@ export class ContentAPI_Session {
 		const data = res.data as Content;
 		return data.hash;
 	}
+
+	createSocket(retryOnClose = true, lastId?: number): ContentAPI_Socket {
+		return new ContentAPI_Socket(this.api, this.token, retryOnClose, lastId);
+	}
 }
