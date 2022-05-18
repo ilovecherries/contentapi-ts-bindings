@@ -204,6 +204,7 @@ export class ContentAPI_Session {
 	) {
 		await axios.post(
 			`${this.api.path}/Delete/${type}/${id}`,
+			"",
 			{ headers: this.headers },
 		);
 	}
