@@ -159,7 +159,7 @@ export class ContentAPI_Socket {
 		if (this.lastId) {
 			params.set("lastId", this.lastId.toString());
 		}
-		const socket = new WebSocket(`${this.api.wsPath}${params.toString()}`);
+		const socket = new WebSocket(`${this.api.wsPath}?${params.toString()}`);
 
 		socket.onmessage =
 			(event) => {
