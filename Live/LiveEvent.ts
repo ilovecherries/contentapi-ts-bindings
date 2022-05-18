@@ -1,5 +1,6 @@
 import { UserAction } from "../Enums";
 import { LiveData } from "./LiveData";
+import { WebSocketResponseType as WebSocketResponseType } from "./WebSocketResponse";
 
 export enum LiveEventType {
 	live = "live",
@@ -16,6 +17,6 @@ export interface LiveEvent {
 	date: string;
 	userId: number;
 	action: UserAction;
-	type: LiveEventType;
+	type: LiveEventType | WebSocketResponseType;
 	refId: number;
 }

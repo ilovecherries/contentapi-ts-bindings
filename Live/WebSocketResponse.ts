@@ -1,4 +1,4 @@
-export enum WebsocketResponseType {
+export enum WebSocketResponseType {
 	none = "none",
 	message = "message_event",
 	activity = "activity_event",
@@ -10,7 +10,7 @@ export enum WebsocketResponseType {
 }
 export interface WebSocketResponse {
 	id: string;
-	type: WebsocketResponseType;
+	type: WebSocketResponseType;
 	requestUserId: number;
 	data?: object;
 	error?: string;
