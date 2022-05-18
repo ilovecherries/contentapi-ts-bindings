@@ -1,5 +1,8 @@
-export interface UserlistResult {
+import { LiveData } from "./LiveData";
+
+export interface UserlistResult extends LiveData {
+	/**
+	 * { Content ID: { User ID: Status } }
+	 */
 	statuses: Record<number, Record<number, string>>;
-	// i think this chains users?
-	objects: Record<string, Record<string, object>>;
 }

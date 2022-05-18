@@ -9,12 +9,12 @@ export class SearchRequest {
 		public limit: number = -1,
 		public skip: number = 0,
 		public name: string = "",
-	) {};
+	) {}
 }
 
 export class SearchRequests {
 	constructor(
 		public values: Record<string, any>,
 		public requests: SearchRequest[],
-	) {};
+	) {}
 }

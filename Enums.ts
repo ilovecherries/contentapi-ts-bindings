@@ -1,27 +1,10 @@
-export enum BanType {
-	none = 0,
-	public = 1,
-	private = 2,
-}
+export enum BanType { none = 0, public = 1, private = 2 }
 
-export enum InternalContentType {
-	none = 0,
-	page = 1,
-	module = 2,
-	file = 3
-}
+export enum InternalContentType { none = 0, page = 1, module = 2, file = 3 }
 
-export enum UserAction {
-	create = 1,
-	read = 2,
-	update = 4,
-	delete = 8,
-} 
+export enum UserAction { create = 1, read = 2, update = 4, delete = 8 }
 
-export enum UserType {
-	user = 1,
-	group = 2,
-}
+export enum UserType { user = 1, group = 2 }
 
 export enum AdminLogType {
 	none = 0,
@@ -42,9 +25,4 @@ export enum AdminLogType {
 	login_passwordexpired = 15,
 }
 
-export enum VoteType {
-	none = 0,
-	bad = 1,
-	ok = 2,
-	good = 3,
-}
+export enum VoteType { none = 0, bad = 1, ok = 2, good = 3 }

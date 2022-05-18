@@ -3,21 +3,20 @@ import { IIdType } from "./Views/Extras/ViewInterfaces";
 import { SearchRequest, SearchRequests } from "./Search/SearchRequests";
 import { SearchResult, TypedSearchResult } from "./Search/SearchResult";
 import { RequestType } from "./Search/RequestType";
-import { Content } from "./Views/Content";
-import { Message } from "./Views/Message";
-import { User } from "./Views/User";
+import { Message, User, Content } from "./Views";
 import { InternalContentType } from "./Enums";
+import { LiveData } from "./Live/LiveData";
+import { LiveEvent, LiveEventType } from "./Live/LiveEvent";
+import { WebSocketResponse } from "./Live/WebSocketResponse";
+import { WebSocketRequest } from "./Live/WebSocketRequest";
 
-export enum Status {
-	active = "active",
-	not_present = "",
-}
+export enum Status { active = "active", not_present = "" }
 
 const defaultHeaders: Record<string, string> = {
 	"Content-Type": "application/json",
 };
 
-const defaultPagination = 25;
+const DEFAULT_PAGINATION = 25;
 
 export interface GetPageOptions {
 	messagePage?: number;
@@ -27,29 +26,34 @@ export interface GetPageOptions {
 }
 
 const CONTENT_QUICK_QUERY = "~values,keywords,votes,text,commentCount";
-type ContentQuick = Omit<Content, "values" | "keywords" | "votes" | "text" | "commentCount">;
+type ContentQuick = Omit<
+	Content,
+	"values" | "keywords" | "votes" | "text" | "commentCount"
+>;
 
 export interface GetPageResult {
 	content: Content[];
 	message?: Message[];
 	subpages?: ContentQuick[];
-	user: User[]
+	user: User[];
 }
 
 export class ContentAPI {
-	constructor(
-		private readonly API_URL: string,
-	) {};
+	constructor(private readonly API_URL: string) {}
 
-	get path() { return `https://${this.API_URL}/api`; }
-	get wsPath() { return `wss://${this.API_URL}/api/live/ws`; }
+	get path() {
+		return `https://${this.API_URL}/api`;
+	}
+	get wsPath() {
+		return `wss://${this.API_URL}/api/live/ws`;
+	}
 
 	async login(username: string, password: string): Promise<string> {
-		const body = JSON.stringify({ username, password })
+		const body = JSON.stringify({ username, password });
 		const res = await axios.post(
-			`https://${this.API_URL}/api/User/login`, 
-			body, 
-			{ headers: { "Content-Type": "application/json" }}
+			`https://${this.API_URL}/api/User/login`,
+			body,
+			{ headers: { "Content-Type": "application/json" } },
 		);
 		const token = res.data as string;
 		return token;
@@ -60,9 +64,9 @@ export class ContentAPI {
 		headers = defaultHeaders,
 	): Promise<SearchResult<T>> {
 		const res = await axios.post(
-			`https://${this.API_URL}/api/Request`, 
-			JSON.stringify(search), 
-			{ headers }
+			`https://${this.API_URL}/api/Request`,
+			JSON.stringify(search),
+			{ headers },
 		);
 		return res.data as SearchResult<T>;
 	}
@@ -77,11 +81,11 @@ export class ContentAPI {
 		id: number,
 		{
 			messagePage,
-			messagePagination = 25,
+			messagePagination = DEFAULT_PAGINATION,
 			subpagePage,
-			subpagesPagination = 25,
+			subpagesPagination = DEFAULT_PAGINATION,
 		}: GetPageOptions = {},
-		headers = defaultHeaders
+		headers = defaultHeaders,
 	): Promise<TypedSearchResult<GetPageResult>> {
 		const searches = [
 			new SearchRequest(RequestType.content, "*", "id = @pageid"),
@@ -114,31 +118,124 @@ export class ContentAPI {
 			);
 			userQuery += " or id in @subpages.createUserId";
 		}
-		searches.push(new SearchRequest(
-			RequestType.user, "*", userQuery,
-		));
-		return await this.request(new SearchRequests(
-			{
-				pageid: id,
-				filetype: InternalContentType.file,
-			},
-			searches
-		), headers) as SearchResult<GetPageResult>;
+		searches.push(new SearchRequest(RequestType.user, "*", userQuery));
+		return await this.request(
+			new SearchRequests(
+				{ pageid: id, filetype: InternalContentType.file },
+				searches,
+			),
+			headers,
+		) as SearchResult<GetPageResult>;
 	}
 }
 
-export type ItemType = "message" | "content" | "user" | "watch" | "vote" | "uservariable" | "ban";
+export type ItemType =
+	| "message"
+	| "content"
+	| "user"
+	| "watch"
+	| "vote"
+	| "uservariable"
+	| "ban";
+
+type ContentAPI_Socket_Function = (data: LiveEvent) => void;
 
 export class ContentAPI_Socket {
 	private isReady = false;
-	public socket: WebSocket;
+	private requestCounter = 1;
+	private requests: Map<string, ContentAPI_Socket_Function> = new Map();
+	public socket = this.newSocket();
+	public callback: ContentAPI_Socket_Function = (_) => {};
 
 	constructor(
 		private readonly api: ContentAPI,
 		private readonly token: string,
-		private readonly retryOnClose = false,
-	) {
-		this.socket = new WebSocket(api.wsPath);
+		private readonly retryOnClose = true,
+		private lastId?: number,
+	) {}
+
+	private newSocket(): WebSocket {
+		let params = new URLSearchParams();
+		params.set("token", this.token);
+		if (this.lastId) {
+			params.set("lastId", this.lastId.toString());
+		}
+		const socket = new WebSocket(`${this.api.wsPath}${params.toString()}`);
+
+		socket.onmessage =
+			(event) => {
+				try {
+					const res = JSON.parse(event.data) as LiveEvent;
+
+					switch (res.type) {
+						case LiveEventType.lastId:
+							this.isReady = true;
+							break;
+						case LiveEventType.request:
+							if (res.id && this.requests.has(res.id)) {
+								this.requests.get(res.id)?.(res);
+								this.requests.delete(res.id);
+							}
+							break;
+						case LiveEventType.badtoken:
+						case LiveEventType.unexpected:
+						// TODO: WE WILL HAVE REAL CASES THAT HANDLED THIS
+						case LiveEventType.live:
+							if (res.data.lastId) {
+								this.lastId = res.data.lastId;
+							}
+						default:
+							this.callback(res);
+					}
+				} catch (err) {
+					console.error(err);
+				}
+			};
+
+		return socket;
+	}
+
+	whenReady(callback: () => void) {
+		try {
+			const x = () => {
+				if (this.isReady) {
+					callback();
+				} else {
+					setTimeout(x, 20);
+				}
+			};
+			setTimeout(x, 20);
+		} catch (err) {
+			console.error(err);
+		}
+	}
+
+	private requestId(): string {
+		return `request-${this.requestCounter++}`;
+	}
+
+	setStatus(contentId: number, status = Status.active) {
+		const data = { room: status };
+		const req: WebSocketRequest = {
+			type: "setuserstatus",
+			data,
+			id: this.requestId(),
+		};
+		this.whenReady(() => {
+			this.socket.send(JSON.stringify(req));
+		});
+	}
+
+	sendRequest(data: SearchRequests, callback: ContentAPI_Socket_Function) {
+		const req: WebSocketRequest = {
+			id: this.requestId(),
+			data,
+			type: "request",
+		};
+		this.whenReady(() => {
+			this.socket.send(JSON.stringify(req));
+			this.requests.set(req.id, callback);
+		});
 	}
 }
 
@@ -148,27 +245,21 @@ export interface ContentAPI_SessionState {
 }
 
 export class ContentAPI_Session {
-	private socket: ContentAPI_Socket;
+	public socket: ContentAPI_Socket;
 
-	constructor(
-		private readonly api: ContentAPI,
-		private token: string,
-	) {}
+	constructor(private readonly api: ContentAPI, private token: string) {}
 
-	get headers() { return {
-		"Content-Type": "application/json",
-		"Authorization": `Bearer ${this.token}`
-	} }
+	get headers() {
+		return {
+			"Content-Type": "application/json",
+			"Authorization": `Bearer ${this.token}`,
+		};
+	}
 
-	static async login(
-		api: ContentAPI,
-		username: string,
-		password: string
-	): Promise<ContentAPI_Session> {
-		return new ContentAPI_Session(
-			api,
-			await api.login(username, password)
-		);
+	static async login(api: ContentAPI, username: string, password: string): Promise<
+		ContentAPI_Session
+	> {
+		return new ContentAPI_Session(api, await api.login(username, password));
 	}
 
 	async getUserInfo(): Promise<User> {
@@ -180,16 +271,12 @@ export class ContentAPI_Session {
 	}
 
 	async getState(): Promise<ContentAPI_SessionState> {
-		return {
-			token: this.token,
-			user: await this.getUserInfo()
-		};
+		return { token: this.token, user: await this.getUserInfo() };
 	}
 
-	async write<T extends IIdType>(
-		type: ItemType,
-		itemData: Partial<T>
-	): Promise<T> {
+	async write<T extends IIdType>(type: ItemType, itemData: Partial<T>): Promise<
+		T
+	> {
 		const res = await axios.post(
 			`${this.api.path}/Write/${type}`,
 			JSON.stringify(itemData),
@@ -198,14 +285,28 @@ export class ContentAPI_Session {
 		return res.data;
 	}
 
-	async delete(
-		type: ItemType,
-		id: number,
-	) {
+	async delete(type: ItemType, id: number) {
 		await axios.post(
 			`${this.api.path}/Delete/${type}/${id}`,
 			"",
 			{ headers: this.headers },
 		);
+	}
+
+	async uploadFile(imageData: Blob, bucket?: string): Promise<string> {
+		const formData = new FormData();
+		formData.append("file", imageData);
+		if (bucket) {
+			formData.append("globalPerms", ".");
+			formData.append("values[bucket]", bucket);
+		}
+		const headers = {
+			...this.headers,
+			"Content-Type": "multipart/form-data",
+			"Content-Length": imageData.size,
+		};
+		const res = await axios.post(`${this.api.path}/File`, formData, { headers });
+		const data = res.data as Content;
+		return data.hash;
 	}
 }

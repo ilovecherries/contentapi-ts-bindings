@@ -1,4 +1,5 @@
 import { UserAction } from "../Enums";
+import { LiveData } from "./LiveData";
 
 export enum LiveEventType {
 	live = "live",
@@ -10,7 +11,8 @@ export enum LiveEventType {
 }
 
 export interface LiveEvent {
-	id: number;
+	id: string;
+	data: LiveData;
 	date: string;
 	userId: number;
 	action: UserAction;

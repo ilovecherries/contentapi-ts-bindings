@@ -20,7 +20,8 @@ export interface Message extends IContentUserRelatedType {
 	id: number;
 	contentId: number;
 	createUserId: number;
-	createDate: string;text: string;
+	createDate: string;
+	text: string;
 	values: MessageValues;
 	editDate: string | null;
 	editUserId: number | null;
