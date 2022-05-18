@@ -214,7 +214,8 @@ export class ContentAPI_Socket {
 	}
 
 	setStatus(contentId: number, status = Status.active) {
-		const data = { room: status };
+		const data = {};
+		data[contentId] = status;
 		const req: WebSocketRequest = {
 			type: "setuserstatus",
 			data,
