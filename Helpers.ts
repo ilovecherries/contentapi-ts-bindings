@@ -1,7 +1,7 @@
 import axios from "axios";
 import { IIdType } from "./Views/Extras/ViewInterfaces";
 import { SearchRequest, SearchRequests } from "./Search/SearchRequests";
-import { SearchResult, TypedSearchResult } from "./Search/SearchResult";
+import { SearchResult } from "./Search/SearchResult";
 import { RequestType } from "./Search/RequestType";
 import { Message, User, Content } from "./Views";
 import { InternalContentType } from "./Enums";
@@ -85,7 +85,7 @@ export class ContentAPI {
 			subpagesPagination = DEFAULT_PAGINATION,
 		}: GetPageOptions = {},
 		headers = defaultHeaders,
-	): Promise<TypedSearchResult<GetPageResult>> {
+	): Promise<SearchResult<GetPageResult>> {
 		const searches = [
 			new SearchRequest(RequestType.content, "*", "id = @pageid"),
 		];
