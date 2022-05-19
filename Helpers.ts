@@ -5,9 +5,7 @@ import { SearchResult } from "./Search/SearchResult";
 import { RequestType } from "./Search/RequestType";
 import { Message, User, Content } from "./Views";
 import { InternalContentType } from "./Enums";
-import { LiveData } from "./Live/LiveData";
 import { LiveEvent, LiveEventType } from "./Live/LiveEvent";
-import { WebSocketResponse, WebSocketResponseType } from "./Live/WebSocketResponse";
 import { WebSocketRequest } from "./Live/WebSocketRequest";
 
 export enum Status { active = "active", not_present = "" }
