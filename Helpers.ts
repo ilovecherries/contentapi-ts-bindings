@@ -7,7 +7,7 @@ import { Message, User, Content } from "./Views";
 import { InternalContentType } from "./Enums";
 import { LiveData } from "./Live/LiveData";
 import { LiveEvent, LiveEventType } from "./Live/LiveEvent";
-import { WebSocketResponse } from "./Live/WebSocketResponse";
+import { WebSocketResponse, WebSocketResponseType } from "./Live/WebSocketResponse";
 import { WebSocketRequest } from "./Live/WebSocketRequest";
 
 export enum Status { active = "active", not_present = "" }
@@ -141,6 +141,7 @@ export class ContentAPI_Socket {
 	private requests: Map<string, ContentAPI_Socket_Function> = new Map();
 	public socket = this.newSocket();
 	public callback: ContentAPI_Socket_Function = (_) => { };
+	public badtoken: () => void = () => { };
 
 	constructor(
 		private readonly api: ContentAPI,
@@ -173,6 +174,10 @@ export class ContentAPI_Socket {
 							}
 							break;
 						case LiveEventType.badtoken:
+							this.socket.close();
+							this.socket = undefined;
+							this.badtoken();
+							break;
 						case LiveEventType.unexpected:
 						// TODO: WE WILL HAVE REAL CASES THAT HANDLED THIS
 						case LiveEventType.live:
