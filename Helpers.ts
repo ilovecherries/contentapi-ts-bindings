@@ -176,6 +176,7 @@ export class ContentAPI_Socket {
 						case LiveEventType.badtoken:
 							this.socket.close();
 							this.socket = undefined;
+							this.isReady = false;
 							this.badtoken();
 							break;
 						case LiveEventType.unexpected:
