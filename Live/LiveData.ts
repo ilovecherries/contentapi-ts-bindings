@@ -1,9 +1,9 @@
-import { LiveEvent, LiveEventType } from "./LiveEvent";
+import { LiveEvent } from "./LiveEvent";
 import { WebSocketResponseType } from "./WebSocketResponse";
 
-export interface LiveData {
+export interface LiveData<T = Record<WebSocketResponseType, Record<string, Array<object>>>> {
 	optimized?: boolean;
 	lastId?: number;
 	events?: LiveEvent[];
-	objects: Record<WebSocketResponseType, Record<string, Array<object>>>;
+	objects: T;
 }

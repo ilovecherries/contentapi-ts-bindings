@@ -38,6 +38,53 @@ export interface GetPageResult {
 	user: User[];
 }
 
+export function getPageRequest(
+	id: number,
+	{
+		messagePage,
+		messagePagination = DEFAULT_PAGINATION,
+		subpagePage,
+		subpagesPagination = DEFAULT_PAGINATION,
+	}: GetPageOptions = {},
+): SearchRequests {
+	const searches = [
+		new SearchRequest(RequestType.content, "*", "id = @pageid"),
+	];
+	let userQuery = "id in @content.createUserId";
+	if (messagePage !== undefined) {
+		searches.push(
+			new SearchRequest(
+				RequestType.message,
+				"*",
+				"contentId = @pageid and !notdeleted() and !null(module)",
+				"id_desc",
+				messagePagination,
+				messagePage * messagePagination,
+			),
+		);
+		userQuery += " or id in @message.createUserId";
+	}
+	if (subpagePage !== undefined) {
+		searches.push(
+			new SearchRequest(
+				RequestType.content,
+				CONTENT_QUICK_QUERY,
+				"parentId = @pageid and !notdeleted() and contentType <> @filetype",
+				"id_desc",
+				subpagesPagination,
+				subpagePage * subpagesPagination,
+				"subpages",
+			),
+		);
+		userQuery += " or id in @subpages.createUserId";
+	}
+	searches.push(new SearchRequest(RequestType.user, "*", userQuery));
+	return new SearchRequests(
+		{ pageid: id, filetype: InternalContentType.file },
+		searches,
+	);
+}
+
 export class ContentAPI {
 	constructor(private readonly API_URL: string) { }
 
@@ -74,57 +121,6 @@ export class ContentAPI {
 	getFileURL(hash: string, size: number): string {
 		return `https://${this.API_URL}/api/File/raw/${hash}${size ? `?size=${size}&crop=true` : ""
 			}`;
-	}
-
-	async getPage(
-		id: number,
-		{
-			messagePage,
-			messagePagination = DEFAULT_PAGINATION,
-			subpagePage,
-			subpagesPagination = DEFAULT_PAGINATION,
-		}: GetPageOptions = {},
-		headers = defaultHeaders,
-	): Promise<SearchResult<GetPageResult>> {
-		const searches = [
-			new SearchRequest(RequestType.content, "*", "id = @pageid"),
-		];
-		let userQuery = "id in @content.createUserId";
-		if (messagePage !== undefined) {
-			searches.push(
-				new SearchRequest(
-					RequestType.message,
-					"*",
-					"contentId = @pageid and !notdeleted() and !null(module)",
-					"id_desc",
-					messagePagination,
-					messagePage * messagePagination,
-				),
-			);
-			userQuery += " or id in @message.createUserId";
-		}
-		if (subpagePage !== undefined) {
-			searches.push(
-				new SearchRequest(
-					RequestType.content,
-					CONTENT_QUICK_QUERY,
-					"parentId = @pageid and !notdeleted() and contentType <> @filetype",
-					"id_desc",
-					subpagesPagination,
-					subpagePage * subpagesPagination,
-					"subpages",
-				),
-			);
-			userQuery += " or id in @subpages.createUserId";
-		}
-		searches.push(new SearchRequest(RequestType.user, "*", userQuery));
-		return await this.request(
-			new SearchRequests(
-				{ pageid: id, filetype: InternalContentType.file },
-				searches,
-			),
-			headers,
-		) as SearchResult<GetPageResult>;
 	}
 }
 
