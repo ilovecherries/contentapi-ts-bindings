@@ -83,6 +83,29 @@ export function getPageRequest(
 	);
 }
 
+export interface GetUserPageResult {
+	content: Content[];
+	user: User[]
+}
+
+export function getUserPageRequest(userId: number) {
+	return new SearchRequests(
+		{ userId },
+		[
+			new SearchRequest(
+				RequestType.user,
+				"*",
+				"id = @userId",
+			),
+			new SearchRequest(
+				RequestType.content,
+				"*",
+				"!userpage(@userId)",
+			),
+		]
+	);
+}
+
 export class ContentAPI {
 	constructor(private readonly API_URL: string) { }
 

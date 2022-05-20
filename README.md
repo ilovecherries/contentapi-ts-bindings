@@ -5,5 +5,5 @@ tools
 i need to make a standard wrapper for the API similar to api.js
 
 ## TODO:
-[ ] tests
-[ ] websockets
+- [ ] tests
+- [ ] websockets
