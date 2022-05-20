@@ -9,7 +9,7 @@ export interface User extends IIdType {
 	type: UserType;
 	createDate: string;
 	createUserId: number;
-	super: boolean;
+	super: number;
 	registered: boolean;
 	deleted: boolean;
 	groups: number[];
