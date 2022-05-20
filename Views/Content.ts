@@ -1,4 +1,4 @@
-import { VoteType } from "../Enums";
+import { InternalContentType, VoteType } from "../Enums";
 import { MarkupLanguage } from "./Extras/MarkupLanguage";
 import { IIdType } from "./Extras/ViewInterfaces";
 
@@ -11,6 +11,7 @@ export interface ContentValues {
 export interface Content extends IIdType {
 	id: number;
 	deleted: boolean;
+	contentType: InternalContentType;
 	createUserId: number;
 	createDate: string;
 	name: string;
