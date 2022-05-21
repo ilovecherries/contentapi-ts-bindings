@@ -164,7 +164,7 @@ export class ContentAPI_Socket {
 	private isReady = false;
 	private requestCounter = 1;
 	private requests: Map<string, ContentAPI_Socket_Function> = new Map();
-	public socket = this.newSocket();
+	public socket?: WebSocket;
 	public callback: ContentAPI_Socket_Function = (_) => { };
 	public badtoken: () => void = () => { };
 
