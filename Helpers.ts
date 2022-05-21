@@ -157,27 +157,37 @@ export type ItemType =
 export type ContentAPI_Socket_Function = (data: LiveEvent) => void;
 
 export class ContentAPI_Socket {
+	private readonly api: ContentAPI;
+	private readonly token: string;
+	private readonly retryOnClose: boolean;
+	private lastId?: number;
 	private isReady = false;
 	private requestCounter = 1;
 	private requests: Map<string, ContentAPI_Socket_Function> = new Map();
-	public socket = this.newSocket(this.api);
+	public socket = this.newSocket();
 	public callback: ContentAPI_Socket_Function = (_) => { };
 	public badtoken: () => void = () => { };
 
 	constructor(
-		private readonly api: ContentAPI,
-		private readonly token: string,
-		private readonly retryOnClose = true,
-		private lastId?: number,
-	) { }
+		api: ContentAPI,
+		token: string,
+		retryOnClose = true,
+		lastId?: number,
+	) {
+		this.api = api;
+		this.token = token;
+		this.retryOnClose = retryOnClose;
+		this.lastId = lastId;
+		this.socket = this.newSocket();
+	}
 
-	private newSocket(api: ContentAPI): WebSocket {
+	private newSocket(): WebSocket {
 		let params = new URLSearchParams();
 		params.set("token", this.token);
 		if (this.lastId) {
 			params.set("lastId", this.lastId.toString());
 		}
-		const socket = new WebSocket(`${api.wsPath}?${params.toString()}`);
+		const socket = new WebSocket(`${this.api.wsPath}?${params.toString()}`);
 
 		socket.onmessage =
 			(event) => {
