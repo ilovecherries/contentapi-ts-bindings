@@ -160,7 +160,7 @@ export class ContentAPI_Socket {
 	private isReady = false;
 	private requestCounter = 1;
 	private requests: Map<string, ContentAPI_Socket_Function> = new Map();
-	public socket = this.newSocket();
+	public socket = this.newSocket(this.api);
 	public callback: ContentAPI_Socket_Function = (_) => { };
 	public badtoken: () => void = () => { };
 
@@ -171,13 +171,13 @@ export class ContentAPI_Socket {
 		private lastId?: number,
 	) { }
 
-	private newSocket(): WebSocket {
+	private newSocket(api: ContentAPI): WebSocket {
 		let params = new URLSearchParams();
 		params.set("token", this.token);
 		if (this.lastId) {
 			params.set("lastId", this.lastId.toString());
 		}
-		const socket = new WebSocket(`${this.api.wsPath}?${params.toString()}`);
+		const socket = new WebSocket(`${api.wsPath}?${params.toString()}`);
 
 		socket.onmessage =
 			(event) => {
