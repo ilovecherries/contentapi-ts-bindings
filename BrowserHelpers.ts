@@ -1,5 +1,8 @@
-import { ContentAPI_Socket } from "./Helpers";
+import axios from "axios";
+import FormData from "form-data";
+import { ContentAPI_Session, ContentAPI_Socket } from "./Helpers";
 import { LiveEvent } from "./Live/LiveEvent";
+import { Content } from "./Views";
 
 export class ContentAPI_Browser_Socket extends ContentAPI_Socket<WebSocket> {
 	closeSocket() {
@@ -29,7 +32,22 @@ export class ContentAPI_Browser_Socket extends ContentAPI_Socket<WebSocket> {
 
 	sendMessage(data: string) {
 		this.whenReady(() => {
-			this.socket.send(data);
+			this.socket?.send(data);
 		});
 	}
+}
+
+export const uploadFile = async (session: ContentAPI_Session, data: FormData, bucket?: string): Promise<string> => {
+	if (bucket) {
+		data.append("globalPerms", ".");
+		data.append("values[bucket]", bucket);
+	}
+	const headers = {
+		...session.headers,
+		"Content-Type": "multipart/form-data",
+		...data.getHeaders()
+	};
+	const res = await axios.post(`${session.api.path}/File`, data, { headers });
+	const content = res.data as Content;
+	return content.hash;
 }

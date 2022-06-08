@@ -1,6 +1,6 @@
 {
   "name": "contentapi-ts-bindings",
-  "version": "1.0.33",
+  "version": "1.0.34",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -15,9 +15,12 @@
   "author": "",
   "license": "ISC",
   "optionalDependencies": {
-    "axios": "^0.27.2"
+    "axios": "^0.27.2",
+    "ws": "^8.7.0",
+    "form-data": "^4.0.0"
   },
   "devDependencies": {
+    "@types/ws": "^8.5.3",
     "rome": "^0.5.0-next"
   }
 }

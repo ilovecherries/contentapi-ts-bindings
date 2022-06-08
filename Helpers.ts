@@ -267,7 +267,7 @@ export interface ContentAPI_SessionState {
 }
 
 export class ContentAPI_Session {
-	constructor(private readonly api: ContentAPI, private token: string) { }
+	constructor(readonly api: ContentAPI, private token: string) { }
 
 	get headers() {
 		return {
@@ -313,25 +313,8 @@ export class ContentAPI_Session {
 		);
 	}
 
-	async uploadFile(imageData: Blob, bucket?: string): Promise<string> {
-		const formData = new FormData();
-		formData.append("file", imageData);
-		if (bucket) {
-			formData.append("globalPerms", ".");
-			formData.append("values[bucket]", bucket);
-		}
-		const headers = {
-			...this.headers,
-			"Content-Type": "multipart/form-data",
-			"Content-Length": imageData.size,
-		};
-		const res = await axios.post(`${this.api.path}/File`, formData, { headers });
-		const data = res.data as Content;
-		return data.hash;
-	}
-
 	createSocket<U, T extends ContentAPI_Socket<U>>(
-		ctor: new(
+		ctor: new (
 			api: ContentAPI,
 			token: string,
 			retryOnClose?: boolean,
