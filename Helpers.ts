@@ -156,23 +156,23 @@ export type ItemType =
 
 export type ContentAPI_Socket_Function = (data: LiveEvent) => void;
 
-export class ContentAPI_Socket {
-	private readonly api: ContentAPI;
-	private readonly token: string;
-	private readonly retryOnClose: boolean;
-	private lastId?: number;
-	private isReady = false;
-	private requestCounter = 1;
-	private requests: Map<string, ContentAPI_Socket_Function> = new Map();
-	public socket?: WebSocket;
+export abstract class ContentAPI_Socket<T> {
+	protected readonly api: ContentAPI;
+	protected readonly token: string;
+	protected readonly retryOnClose: boolean;
+	protected lastId?: number;
+	protected isReady = false;
+	protected requestCounter = 1;
+	protected requests: Map<string, ContentAPI_Socket_Function> = new Map();
+	public socket?: T;
 	public callback: ContentAPI_Socket_Function = (_) => { };
 	public badtoken: () => void = () => { };
 
 	constructor(
 		api: ContentAPI,
 		token: string,
-		retryOnClose = true,
-		lastId?: number,
+		retryOnClose: boolean = true,
+		lastId?: number
 	) {
 		this.api = api;
 		this.token = token;
@@ -181,53 +181,13 @@ export class ContentAPI_Socket {
 		this.socket = this.newSocket();
 	}
 
-	private newSocket(): WebSocket {
-		let params = new URLSearchParams();
-		params.set("token", this.token);
-		if (this.lastId) {
-			params.set("lastId", this.lastId.toString());
-		}
-		const socket = new WebSocket(`${this.api.wsPath}?${params.toString()}`);
+	abstract closeSocket()
 
-		socket.onmessage =
-			(event) => {
-				try {
-					const res = JSON.parse(event.data) as LiveEvent;
+	abstract newSocket(): T
 
-					switch (res.type) {
-						case LiveEventType.lastId:
-							this.isReady = true;
-							break;
-						case LiveEventType.request:
-							if (res.id && this.requests.has(res.id)) {
-								this.requests.get(res.id)?.(res);
-								this.requests.delete(res.id);
-							}
-							break;
-						case LiveEventType.badtoken:
-							this.socket.close();
-							this.socket = undefined;
-							this.isReady = false;
-							this.badtoken();
-							break;
-						case LiveEventType.unexpected:
-						// TODO: WE WILL HAVE REAL CASES THAT HANDLED THIS
-						case LiveEventType.live:
-							if (res.data.lastId) {
-								this.lastId = res.data.lastId;
-							}
-						default:
-							this.callback(res);
-					}
-				} catch (err) {
-					console.error(err);
-				}
-			};
+	abstract sendMessage(data: string)
 
-		return socket;
-	}
-
-	whenReady(callback: () => void) {
+	public whenReady(callback: () => void) {
 		try {
 			const x = () => {
 				if (this.isReady) {
@@ -242,9 +202,42 @@ export class ContentAPI_Socket {
 		}
 	}
 
-	private requestId(): string {
+	protected requestId(): string {
 		return `request-${this.requestCounter++}`;
 	}
+
+	protected onMessage(res: LiveEvent) {
+		try {
+			switch (res.type) {
+				case LiveEventType.lastId:
+					this.isReady = true;
+					break;
+				case LiveEventType.request:
+					if (res.id && this.requests.has(res.id)) {
+						this.requests.get(res.id)?.(res);
+						this.requests.delete(res.id);
+					}
+					break;
+				case LiveEventType.badtoken:
+					this.closeSocket();
+					this.socket = undefined;
+					this.isReady = false;
+					this.badtoken();
+					break;
+				case LiveEventType.unexpected:
+				// TODO: WE WILL HAVE REAL CASES THAT HANDLED THIS
+				case LiveEventType.live:
+					if (res.data.lastId) {
+						this.lastId = res.data.lastId;
+					}
+				default:
+					this.callback(res);
+			}
+		} catch (err) {
+			console.error(err);
+		}
+	}
+
 
 	setStatus(contentId: number, status = Status.active) {
 		const data = {};
@@ -254,9 +247,7 @@ export class ContentAPI_Socket {
 			data,
 			id: this.requestId(),
 		};
-		this.whenReady(() => {
-			this.socket.send(JSON.stringify(req));
-		});
+		this.sendMessage(JSON.stringify(req));
 	}
 
 	sendRequest(data: SearchRequests, callback: ContentAPI_Socket_Function) {
@@ -265,10 +256,7 @@ export class ContentAPI_Socket {
 			data,
 			type: "request",
 		};
-		this.whenReady(() => {
-			this.socket.send(JSON.stringify(req));
-			this.requests.set(req.id, callback);
-		});
+		this.sendMessage(JSON.stringify(req));
 	}
 }
 
@@ -278,8 +266,6 @@ export interface ContentAPI_SessionState {
 }
 
 export class ContentAPI_Session {
-	public socket: ContentAPI_Socket;
-
 	constructor(private readonly api: ContentAPI, private token: string) { }
 
 	get headers() {
@@ -343,7 +329,15 @@ export class ContentAPI_Session {
 		return data.hash;
 	}
 
-	createSocket(retryOnClose = true, lastId?: number): ContentAPI_Socket {
-		return new ContentAPI_Socket(this.api, this.token, retryOnClose, lastId);
+	createSocket<U, T extends ContentAPI_Socket<U>>(
+		ctor: new(
+			api: ContentAPI,
+			token: string,
+			retryOnClose?: boolean,
+			lastId?: number
+		) => T,
+		retryOnClose = true, lastId?: number
+	): T {
+		return new ctor(this.api, this.token, retryOnClose, lastId);
 	}
 }
