@@ -257,6 +257,7 @@ export abstract class ContentAPI_Socket<T> {
 			type: "request",
 		};
 		this.sendMessage(JSON.stringify(req));
+		this.requests.set(req.id, callback);
 	}
 }
 
