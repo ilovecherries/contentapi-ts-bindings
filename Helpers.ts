@@ -251,13 +251,14 @@ export abstract class ContentAPI_Socket<T> {
 	}
 
 	sendRequest(data: SearchRequests, callback: ContentAPI_Socket_Function) {
+		const id = this.requestId();
 		const req: WebSocketRequest = {
-			id: this.requestId(),
+			id,
 			data,
 			type: "request",
 		};
 		this.sendMessage(JSON.stringify(req));
-		this.requests.set(req.id, callback);
+		this.requests.set(id, callback);
 	}
 }
 
