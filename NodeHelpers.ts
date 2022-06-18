@@ -30,6 +30,10 @@ export class ContentAPI_Node_Socket extends ContentAPI_Socket<WebSocket> {
       return socket;
    }
 
+   onClose(callback: (data: any) => void) {
+      this.socket?.on('close', callback);
+   }
+
    sendMessage(data: string) {
       this.whenReady(() => {
          this.socket?.send(data);

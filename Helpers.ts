@@ -181,11 +181,11 @@ export abstract class ContentAPI_Socket<T> {
 		this.socket = this.newSocket();
 	}
 
-	abstract closeSocket()
+	abstract closeSocket(): void
 
 	abstract newSocket(): T
 
-	abstract sendMessage(data: string)
+	abstract sendMessage(data: string): void
 
 	public whenReady(callback: () => void) {
 		try {
@@ -240,7 +240,7 @@ export abstract class ContentAPI_Socket<T> {
 
 
 	setStatus(contentId: number, status = Status.active) {
-		const data = {};
+		const data: any = {};
 		data[contentId] = status;
 		const req: WebSocketRequest = {
 			type: "setuserstatus",
