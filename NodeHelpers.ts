@@ -27,11 +27,10 @@ export class ContentAPI_Node_Socket extends ContentAPI_Socket<WebSocket> {
          }
       })
 
-      return socket;
-   }
+      socket.on('error', this.onError)
+      socket.on('close', this.onClose)
 
-   onClose(callback: (data: any) => void) {
-      this.socket?.on('close', callback);
+      return socket;
    }
 
    sendMessage(data: string) {

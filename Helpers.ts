@@ -185,6 +185,18 @@ export abstract class ContentAPI_Socket<T> {
 
 	abstract newSocket(): T
 
+	onClose() {
+		console.error("websocket closed")
+		if (this.retryOnClose) {
+			console.log("reopening socket...")
+			this.socket = this.newSocket();
+		}
+	}
+
+	onError(data: any) {
+		console.error("websocket error!: ", data)
+	}
+
 	abstract sendMessage(data: string): void
 
 	public whenReady(callback: () => void) {
