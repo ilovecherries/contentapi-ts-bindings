@@ -9,7 +9,7 @@ export class ContentAPI_Browser_Socket extends ContentAPI_Socket<WebSocket> {
 	}
 
 	newSocket(): WebSocket {
-		let params = new URLSearchParams();
+		const params = new URLSearchParams();
 		params.set("token", this.token);
 		if (this.lastId) {
 			params.set("lastId", this.lastId.toString());
@@ -26,8 +26,8 @@ export class ContentAPI_Browser_Socket extends ContentAPI_Socket<WebSocket> {
 				}
 			};
 
-		socket.onclose = this.onClose
-		socket.onerror = this.onError
+		socket.onclose = this.onClose;
+		socket.onerror = this.onError;
 
 		return socket;
 	}
@@ -54,4 +54,4 @@ export const uploadFile = async (session: ContentAPI_Session, imageData: Blob, b
 	const res = await axios.post(`${session.api.path}/File`, formData, { headers });
 	const data = res.data as Content;
 	return data.hash;
-}
+};

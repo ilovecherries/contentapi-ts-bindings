@@ -9,6 +9,7 @@ export enum LiveEventType {
 	lastId = "lastId",
 	unexpected = "unexpected",
 	badtoken = "badtoken",
+	ping = "ping",
 }
 
 export interface LiveEvent {

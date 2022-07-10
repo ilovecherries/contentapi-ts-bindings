@@ -8,7 +8,10 @@ import { InternalContentType } from "./Enums";
 import { LiveEvent, LiveEventType } from "./Live/LiveEvent";
 import { WebSocketRequest } from "./Live/WebSocketRequest";
 
-export enum Status { active = "active", not_present = "" }
+export enum Status {
+	active = "active",
+	not_present = "",
+}
 
 const defaultHeaders: Record<string, string> = {
 	"Content-Type": "application/json",
@@ -43,7 +46,7 @@ export function getPageRequest(
 		messagePagination = DEFAULT_PAGINATION,
 		subpagePage,
 		subpagesPagination = DEFAULT_PAGINATION,
-	}: GetPageOptions = {},
+	}: GetPageOptions = {}
 ): SearchRequests {
 	const searches = [
 		new SearchRequest(RequestType.content, "*", "id = @pageid"),
@@ -57,8 +60,8 @@ export function getPageRequest(
 				"contentId = @pageid and !notdeleted() and !null(module)",
 				"id_desc",
 				messagePagination,
-				messagePage * messagePagination,
-			),
+				messagePage * messagePagination
+			)
 		);
 		userQuery += " or id in @message.createUserId";
 	}
@@ -71,39 +74,28 @@ export function getPageRequest(
 				"id_desc",
 				subpagesPagination,
 				subpagePage * subpagesPagination,
-				"subpages",
-			),
+				"subpages"
+			)
 		);
 		userQuery += " or id in @subpages.createUserId";
 	}
 	searches.push(new SearchRequest(RequestType.user, "*", userQuery));
 	return new SearchRequests(
 		{ pageid: id, filetype: InternalContentType.file },
-		searches,
+		searches
 	);
 }
 
 export interface GetUserPageResult {
 	content: Content[];
-	user: User[]
+	user: User[];
 }
 
 export function getUserPageRequest(userId: number) {
-	return new SearchRequests(
-		{ userId },
-		[
-			new SearchRequest(
-				RequestType.user,
-				"*",
-				"id = @userId",
-			),
-			new SearchRequest(
-				RequestType.content,
-				"*",
-				"!userpage(@userId)",
-			),
-		]
-	);
+	return new SearchRequests({ userId }, [
+		new SearchRequest(RequestType.user, "*", "id = @userId"),
+		new SearchRequest(RequestType.content, "*", "!userpage(@userId)"),
+	]);
 }
 
 export class ContentAPI {
@@ -121,7 +113,7 @@ export class ContentAPI {
 		const res = await axios.post(
 			`https://${this.API_URL}/api/User/login`,
 			body,
-			{ headers: { "Content-Type": "application/json" } },
+			{ headers: { "Content-Type": "application/json" } }
 		);
 		const token = res.data as string;
 		return token;
@@ -129,19 +121,19 @@ export class ContentAPI {
 
 	async request<T = Record<string, Record<string, object>>>(
 		search: SearchRequests,
-		headers = defaultHeaders,
+		headers = defaultHeaders
 	): Promise<SearchResult<T>> {
 		const res = await axios.post(
 			`https://${this.API_URL}/api/Request`,
 			JSON.stringify(search),
-			{ headers },
+			{ headers }
 		);
 		return res.data as SearchResult<T>;
 	}
 
 	getFileURL(hash: string, size: number): string {
 		return `https://${this.API_URL}/api/File/raw/${hash}${size ? `?size=${size}&crop=true` : ""
-			}`;
+		}`;
 	}
 }
 
@@ -164,14 +156,17 @@ export abstract class ContentAPI_Socket<T> {
 	protected isReady = false;
 	protected requestCounter = 1;
 	protected requests: Map<string, ContentAPI_Socket_Function> = new Map();
+	private readyQueue: Array<() => void> = [];
 	public socket?: T;
-	public callback: ContentAPI_Socket_Function = (_) => { };
-	public badtoken: () => void = () => { };
+	public callback?: ContentAPI_Socket_Function;
+	public badtoken?: () => void;
+	protected pingTimeoutLength = 2000;
+	public pingTimeout?: ReturnType<typeof setTimeout>;
 
 	constructor(
 		api: ContentAPI,
 		token: string,
-		retryOnClose: boolean = true,
+		retryOnClose = true,
 		lastId?: number
 	) {
 		this.api = api;
@@ -181,36 +176,29 @@ export abstract class ContentAPI_Socket<T> {
 		this.socket = this.newSocket();
 	}
 
-	abstract closeSocket(): void
+	abstract closeSocket(): void;
 
-	abstract newSocket(): T
+	abstract newSocket(): T;
 
 	onClose() {
-		console.error("websocket closed")
+		console.error("websocket closed");
 		if (this.retryOnClose) {
-			console.log("reopening socket...")
+			console.log("reopening socket...");
 			this.socket = this.newSocket();
 		}
 	}
 
-	onError(data: any) {
-		console.error("websocket error!: ", data)
+	onError(data: unknown) {
+		console.error("websocket error!: ", data);
 	}
 
-	abstract sendMessage(data: string): void
+	abstract sendMessage(data: string): void;
 
 	public whenReady(callback: () => void) {
-		try {
-			const x = () => {
-				if (this.isReady) {
-					callback();
-				} else {
-					setTimeout(x, 20);
-				}
-			};
-			setTimeout(x, 20);
-		} catch (err) {
-			console.error(err);
+		if (this.isReady) {
+			callback?.();
+		} else {
+			this.readyQueue.push(callback);
 		}
 	}
 
@@ -218,41 +206,55 @@ export abstract class ContentAPI_Socket<T> {
 		return `request-${this.requestCounter++}`;
 	}
 
+	protected restartSocket(): void {
+		this.closeSocket();
+	}
+
 	protected onMessage(res: LiveEvent) {
 		try {
 			switch (res.type) {
-				case LiveEventType.lastId:
-					this.isReady = true;
-					break;
-				case LiveEventType.request:
-					if (res.id && this.requests.has(res.id)) {
-						this.requests.get(res.id)?.(res);
-						this.requests.delete(res.id);
-					}
-					break;
-				case LiveEventType.badtoken:
+			case LiveEventType.lastId:
+				this.isReady = true;
+				this.readyQueue.map((c) => c());
+				this.readyQueue = [];
+				break;
+			case LiveEventType.request:
+				if (res.id && this.requests.has(res.id)) {
+					this.requests.get(res.id)?.(res);
+					this.requests.delete(res.id);
+				}
+				break;
+			case LiveEventType.badtoken:
+				this.closeSocket();
+				this.socket = undefined;
+				this.isReady = false;
+				this.badtoken?.();
+				break;
+			case LiveEventType.ping:
+				if (this.pingTimeout) {
+					clearTimeout(this.pingTimeout);
+				}
+				this.pingTimeout = setTimeout(() => {
 					this.closeSocket();
-					this.socket = undefined;
-					this.isReady = false;
-					this.badtoken();
-					break;
-				case LiveEventType.unexpected:
-				// TODO: WE WILL HAVE REAL CASES THAT HANDLED THIS
-				case LiveEventType.live:
-					if (res.data.lastId) {
-						this.lastId = res.data.lastId;
-					}
-				default:
-					this.callback(res);
+				}, this.pingTimeoutLength);
+				break;
+			case LiveEventType.unexpected:
+			case LiveEventType.live:
+				if (res.data.lastId) {
+					this.lastId = res.data.lastId;
+				}
+				this.callback?.(res);
+				break;
+			default:
+				this.callback?.(res);
 			}
 		} catch (err) {
 			console.error(err);
 		}
 	}
 
-
 	setStatus(contentId: number, status = Status.active) {
-		const data: any = {};
+		const data: Record<number, string> = {};
 		data[contentId] = status;
 		const req: WebSocketRequest = {
 			type: "setuserstatus",
@@ -272,6 +274,15 @@ export abstract class ContentAPI_Socket<T> {
 		this.sendMessage(JSON.stringify(req));
 		this.requests.set(id, callback);
 	}
+
+	sendPing() {
+		const id = this.requestId();
+		const req: WebSocketRequest = {
+			id,
+			type: "ping",
+		};
+		this.sendMessage(JSON.stringify(req));
+	}
 }
 
 export interface ContentAPI_SessionState {
@@ -285,21 +296,22 @@ export class ContentAPI_Session {
 	get headers() {
 		return {
 			"Content-Type": "application/json",
-			"Authorization": `Bearer ${this.token}`,
+			Authorization: `Bearer ${this.token}`,
 		};
 	}
 
-	static async login(api: ContentAPI, username: string, password: string): Promise<
-		ContentAPI_Session
-	> {
+	static async login(
+		api: ContentAPI,
+		username: string,
+		password: string
+	): Promise<ContentAPI_Session> {
 		return new ContentAPI_Session(api, await api.login(username, password));
 	}
 
 	async getUserInfo(): Promise<User> {
-		const res = await axios.get(
-			`${this.api.path}/User/me`,
-			{ headers: this.headers },
-		);
+		const res = await axios.get(`${this.api.path}/User/me`, {
+			headers: this.headers,
+		});
 		return res.data;
 	}
 
@@ -307,23 +319,22 @@ export class ContentAPI_Session {
 		return { token: this.token, user: await this.getUserInfo() };
 	}
 
-	async write<T extends IIdType>(type: ItemType, itemData: Partial<T>): Promise<
-		T
-	> {
+	async write<T extends IIdType>(
+		type: ItemType,
+		itemData: Partial<T>
+	): Promise<T> {
 		const res = await axios.post(
 			`${this.api.path}/Write/${type}`,
 			JSON.stringify(itemData),
-			{ headers: this.headers },
+			{ headers: this.headers }
 		);
 		return res.data;
 	}
 
 	async delete(type: ItemType, id: number) {
-		await axios.post(
-			`${this.api.path}/Delete/${type}/${id}`,
-			"",
-			{ headers: this.headers },
-		);
+		await axios.post(`${this.api.path}/Delete/${type}/${id}`, "", {
+			headers: this.headers,
+		});
 	}
 
 	createSocket<U, T extends ContentAPI_Socket<U>>(
@@ -333,7 +344,8 @@ export class ContentAPI_Session {
 			retryOnClose?: boolean,
 			lastId?: number
 		) => T,
-		retryOnClose = true, lastId?: number
+		retryOnClose = true,
+		lastId?: number
 	): T {
 		return new ctor(this.api, this.token, retryOnClose, lastId);
 	}
