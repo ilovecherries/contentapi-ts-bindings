@@ -217,6 +217,7 @@ export abstract class ContentAPI_Socket<T> {
 				this.isReady = true;
 				this.readyQueue.map((c) => c());
 				this.readyQueue = [];
+				this.sendPing();
 				break;
 			case LiveEventType.request:
 				if (res.id && this.requests.has(res.id)) {
@@ -244,6 +245,7 @@ export abstract class ContentAPI_Socket<T> {
 					this.lastId = res.data.lastId;
 				}
 				this.callback?.(res);
+				this.sendPing();
 				break;
 			default:
 				this.callback?.(res);
