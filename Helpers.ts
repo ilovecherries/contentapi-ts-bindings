@@ -235,8 +235,11 @@ export abstract class ContentAPI_Socket<T> {
 				if (this.pingTimeout) {
 					clearTimeout(this.pingTimeout);
 				}
-				this.pingTimeout = setTimeout(() => {
-					this.closeSocket();
+				setTimeout(() => {
+					this.sendPing();
+					this.pingTimeout = setTimeout(() => {
+						this.closeSocket();
+					}, this.pingTimeoutLength);
 				}, this.pingTimeoutLength);
 				break;
 			case LiveEventType.unexpected:
