@@ -160,6 +160,7 @@ export abstract class ContentAPI_Socket<T> {
 	public socket?: T;
 	public callback?: ContentAPI_Socket_Function;
 	public badtoken?: () => void;
+	private pingSendLock = false;
 	protected pingTimeoutLength = 2000;
 	public pingTimeout?: ReturnType<typeof setTimeout>;
 
@@ -235,12 +236,16 @@ export abstract class ContentAPI_Socket<T> {
 				if (this.pingTimeout) {
 					clearTimeout(this.pingTimeout);
 				}
-				setTimeout(() => {
-					this.sendPing();
-					this.pingTimeout = setTimeout(() => {
-						this.closeSocket();
+				if (!this.pingSendLock) {
+					this.pingSendLock = true;
+					setTimeout(() => {
+						this.pingSendLock = false;
+						this.sendPing();
+						this.pingTimeout = setTimeout(() => {
+							this.closeSocket();
+						}, this.pingTimeoutLength);
 					}, this.pingTimeoutLength);
-				}, this.pingTimeoutLength);
+				}
 				break;
 			case LiveEventType.unexpected:
 			case LiveEventType.live:
