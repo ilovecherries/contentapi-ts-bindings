@@ -27,8 +27,8 @@ export class ContentAPI_Node_Socket extends ContentAPI_Socket<WebSocket> {
 			}
 		});
 
-		socket.on("error", (e) => { this.onError(e); });
-		socket.on("close", () => { this.onClose(); });
+		socket.on("error", this.onError.bind(this));
+		socket.on("close", this.onClose.bind(this));
 
 		return socket;
 	}
