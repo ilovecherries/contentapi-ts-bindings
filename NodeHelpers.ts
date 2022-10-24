@@ -11,6 +11,7 @@ export class ContentAPI_Node_Socket extends ContentAPI_Socket<WebSocket> {
 	}
 
 	newSocket(): WebSocket {
+		this.closeSocket();
 		const params = new URLSearchParams();
 		params.set("token", this.token);
 		if (this.lastId) {
